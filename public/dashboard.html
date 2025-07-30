@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Tender Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
+    <script src="https://kit.fontawesome.com/de4ee47533.js" crossorigin="anonymous"></script> </head>
+<body>
+
+    <header>
+        <a href="home.html" class="logo">
+            <i class="fa-brands fa-youtube logo-icon"></i>Tender Management
+        </a>
+        <nav class="navbar">
+            <ul>
+                <li class="nav-item" id="navHome"><a class="nav-link" href="home.html"><span class="icon"><i class="fa-solid fa-house"></i></span><span class="name">HOME</span></a></li>
+                <li class="nav-item" id="navContact"><a class="nav-link" href="contact.html"><span class="icon"><i class="fa-solid fa-id-card-clip"></i></span><span class="name">CONTACT</span></a></li>
+                <li class="active nav-item" aria-current="page" id="navDashboard"><a class="nav-link" href="dashboard.html"><span class="icon"><i class="fa-solid fa-chart-line"></i></span><span class="name">DASHBOARD</span></a></li>
+                <li class="nav-item" id="navCreateTender"><a class="nav-link" href="create-tender.html"><span class="icon"><i class="fa-solid fa-plus-circle"></i></span><span class="name">CREATE TENDER</span></a></li>
+                <li class="nav-item" id="navMyBids"><a class="nav-link" href="my-bids.html"><span class="icon"><i class="fa-solid fa-gavel"></i></span><span class="name">MY BIDS</span></a></li>
+                <li class="nav-item" id="navProfile"><a class="nav-link" href="profile.html"><span class="icon"><i class="fa-solid fa-user"></i></span><span class="name">PROFILE</span></a></li>
+                <li class="nav-item" id="navLogin"><a class="nav-link" href="login.html"><span class="icon"><i class="fa-solid fa-sign-in-alt"></i></span><span class="name">LOGIN</span></a></li>
+                <li class="nav-item" id="navRegister"><a class="nav-link" href="register.html"><span class="icon"><i class="fa-solid fa-user-plus"></i></span><span class="name">REGISTER</span></a></li>
+                <li class="nav-item" id="navLogout"><a class="nav-link" href="#" id="logoutLink"><span class="icon"><i class="fa-solid fa-sign-out-alt"></i></span><span class="name">LOGOUT</span></a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <h2 class="section-title">All Open Tenders</h2>
+            <div id="tendersList" class="projects-grid">
+                <p class="text-center" style="color: var(--yt-text-secondary);">Loading tenders...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Helper function to handle 401 Unauthorized errors
+            const handleUnauthorized = (error) => {
+                if (error.message.includes('401') || error.message.includes('403')) {
+                    Swal.fire({
+                        title: 'Session Expired',
+                        text: 'Your session has expired or is invalid. Please log in again.',
+                        icon: 'warning',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        localStorage.removeItem('jwtToken');
+                        localStorage.removeItem('userType');
+                        window.location.href = 'login.html';
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: error.message || 'Failed to load data. Please try again later.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            };
+
+            // Function to fetch and display tenders
+            async function fetchTenders() {
+                try {
+                    const response = await fetch('http://127.0.0.1:5001/api/tenders');
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error(`${response.status} Unauthorized/Forbidden`);
+                    }
+                    const tenders = await response.json();
+
+                    const tendersListDiv = document.getElementById('tendersList');
+                    tendersListDiv.innerHTML = '';
+
+                    if (tenders.length === 0) {
+                        tendersListDiv.innerHTML = '<p class="text-center" style="color: var(--yt-text-secondary);">No tenders available at the moment.</p>';
+                        return;
+                    }
+
+                    let openTendersFound = false;
+                    tenders.forEach(tender => {
+                        if (tender.status === 'Open') {
+                            const tenderCard = `
+                                <a href="tender-details.html?id=${tender._id}" class="project-card">
+                                    <h3>${tender.title}</h3>
+                                    <p>${tender.description.substring(0, 120)}...</p>
+                                    <small>Category: ${tender.category}</small>
+                                    <small>Deadline: ${new Date(tender.endDate).toLocaleDateString()}</small>
+                                    <small>Budget: $${tender.minBudget ? tender.minBudget.toLocaleString() : 'N/A'} - $${tender.maxBudget ? tender.maxBudget.toLocaleString() : 'N/A'}</small>
+                                </a>
+                            `;
+                            tendersListDiv.innerHTML += tenderCard;
+                            openTendersFound = true;
+                        }
+                    });
+
+                    if (!openTendersFound) {
+                        tendersListDiv.innerHTML = '<p class="text-center" style="color: var(--yt-text-secondary);">No open tenders available at the moment.</p>';
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching tenders:', error);
+                    document.getElementById('tendersList').innerHTML = `<p class="text-center" style="color: var(--yt-text-secondary);">Failed to load tenders: ${error.message}</p>`;
+                    handleUnauthorized(error);
+                }
+            }
+
+            fetchTenders();
+
+            // Dynamic Navbar Logic (copied from home.html and adapted)
+            const jwtToken = localStorage.getItem('jwtToken');
+            const userType = localStorage.getItem('userType');
+
+            const navDashboard = document.getElementById('navDashboard');
+            const navCreateTender = document.getElementById('navCreateTender');
+            const navMyBids = document.getElementById('navMyBids');
+            const navProfile = document.getElementById('navProfile');
+            const navLogin = document.getElementById('navLogin');
+            const navRegister = document.getElementById('navRegister');
+            const navLogout = document.getElementById('navLogout');
+            const logoutLink = document.getElementById('logoutLink');
+            const navHome = document.getElementById('navHome');
+            const navContact = document.getElementById('navContact');
+
+
+            const updateNavbar = () => {
+                if (jwtToken) { // User is logged in
+                    navLogin.style.display = 'none';
+                    navRegister.style.display = 'none';
+                    if (navDashboard) navDashboard.style.display = 'list-item';
+                    if (navLogout) navLogout.style.display = 'list-item';
+                    if (navProfile) navProfile.style.display = 'list-item';
+                    if (navHome) navHome.style.display = 'list-item';
+                    if (navContact) navContact.style.display = 'list-item'; // Contact Us is available when logged in
+
+
+                    if (userType === 'admin') {
+                        if (navCreateTender) navCreateTender.style.display = 'list-item';
+                        if (navMyBids) navMyBids.style.display = 'none';
+                    } else if (userType === 'bidder') {
+                        if (navMyBids) navMyBids.style.display = 'list-item';
+                        if (navCreateTender) navCreateTender.style.display = 'none';
+                    } else { // Handle unexpected userType
+                        if (navCreateTender) navCreateTender.style.display = 'none';
+                        if (navMyBids) navMyBids.style.display = 'none';
+                    }
+                } else { // User is not logged in
+                    navLogin.style.display = 'list-item';
+                    navRegister.style.display = 'list-item';
+                    if (navHome) navHome.style.display = 'list-item';
+                    if (navContact) navContact.style.display = 'list-item'; // Contact Us is available when not logged in
+                    if (navDashboard) navDashboard.style.display = 'none';
+                    if (navCreateTender) navCreateTender.style.display = 'none';
+                    if (navMyBids) navMyBids.style.display = 'none';
+                    if (navLogout) navLogout.style.display = 'none';
+                    if (navProfile) navProfile.style.display = 'none';
+                }
+            };
+
+            updateNavbar(); // Call on page load to set initial state
+
+            // Logout functionality
+            if (logoutLink) {
+                logoutLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('jwtToken');
+                    localStorage.removeItem('userType');
+                    Swal.fire({ title: 'Logged out!', text: 'You have been logged out.', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
+                        window.location.href = 'home.html';
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

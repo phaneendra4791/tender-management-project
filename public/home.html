@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tender Management</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://kit.fontawesome.com/de4ee47533.js" crossorigin="anonymous"></script>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <header>
+        <a href="home.html" class="logo">
+            <i class="fa-brands fa-youtube logo-icon"></i>Tender Management
+        </a>
+        <nav class="navbar">
+            <ul>
+                <li class="active nav-item" id="navHome"><a class="nav-link" href="home.html"><span class="icon"><i class="fa-solid fa-house"></i></span><span class="name">HOME</span></a></li>
+                <li class="nav-item" id="navDashboard"><a class="nav-link" href="dashboard.html"><span class="icon"><i class="fa-solid fa-chart-line"></i></span><span class="name">DASHBOARD</span></a></li>
+                <li class="nav-item" id="navCreateTender"><a class="nav-link" href="create-tender.html"><span class="icon"><i class="fa-solid fa-plus-circle"></i></span><span class="name">CREATE TENDER</span></a></li>
+                <li class="nav-item" id="navMyBids"><a class="nav-link" href="my-bids.html"><span class="icon"><i class="fa-solid fa-gavel"></i></span><span class="name">MY BIDS</span></a></li>
+                <li class="nav-item" id="navProfile"><a class="nav-link" href="profile.html"><span class="icon"><i class="fa-solid fa-user"></i></span><span class="name">PROFILE</span></a></li>
+                <li class="nav-item" id="navLogin"><a class="nav-link" href="login.html"><span class="icon"><i class="fa-solid fa-sign-in-alt"></i></span><span class="name">LOGIN</span></a></li>
+                <li class="nav-item" id="navRegister"><a class="nav-link" href="register.html"><span class="icon"><i class="fa-solid fa-user-plus"></i></span><span class="name">REGISTER</span></a></li>
+                <li class="nav-item" id="navLogout"><a class="nav-link" href="#" id="logoutLink"><span class="icon"><i class="fa-solid fa-sign-out-alt"></i></span><span class="name">LOGOUT</span></a></li>
+                <li class="nav-item" id="navContact"><a class="nav-link" href="contact.html"><span class="icon"><i class="fa-solid fa-id-card-clip"></i></span><span class="name">CONTACT</span></a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero-section" id="home">
+            <div class="hero-card fade-in">
+                <div class="hero-details">
+                    <h1 class="hero-title">Welcome to Tender Management System</h1>
+                    <h2 class="hero-role">Streamlining Bidding & Procurement</h2>
+                    <p class="hero-summary">
+                        Your ultimate platform for managing tenders efficiently.
+                        Create, bid, and track tenders with ease. Empowering businesses to seize opportunities faster and maximize success.
+                    </p>
+                    <div class="hero-buttons">
+                        <a href="register.html" class="btn-contact">Join Now</a>
+                        <a href="dashboard.html" class="btn-contact">View Open Tenders</a>
+                    </div>
+                    <div class="hero-socials">
+                        <i class="fa-solid fa-envelope" title="Contact Email: jashwanth2004@gmail.com"></i>
+                        <i class="fa-solid fa-phone" title="Contact Phone: +91 9381583441"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="info" class="container skills-container fade-in">
+            <h1 class="section-title">Why Choose Us?</h1>
+            <div class="skills-grid">
+                <div class="card"><i class="fa-solid fa-globe"></i><span>Global Coverage</span></div>
+                <div class="card"><i class="fa-solid fa-dollar-sign"></i><span>Cost Effective</span></div>
+                <div class="card"><i class="fa-solid fa-headset"></i><span>24/7 Support</span></div>
+                <div class="card"><i class="fa-solid fa-users"></i><span>Multi-User Access</span></div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get navigation items by ID
+            const navDashboard = document.getElementById('navDashboard');
+            const navCreateTender = document.getElementById('navCreateTender');
+            const navMyBids = document.getElementById('navMyBids');
+            const navProfile = document.getElementById('navProfile');
+            const navLogin = document.getElementById('navLogin');
+            const navRegister = document.getElementById('navRegister');
+            const navLogout = document.getElementById('navLogout');
+            const logoutLink = document.getElementById('logoutLink');
+            const navHome = document.getElementById('navHome');
+            const navContact = document.getElementById('navContact');
+
+
+            // Function to update navbar visibility
+            const updateNavbar = () => {
+                const jwtToken = localStorage.getItem('jwtToken');
+                const userType = localStorage.getItem('userType');
+
+                if (jwtToken) { // User is logged in
+                    navLogin.style.display = 'none';
+                    navRegister.style.display = 'none';
+                    navDashboard.style.display = 'list-item';
+                    navLogout.style.display = 'list-item';
+                    navProfile.style.display = 'list-item';
+                    navHome.style.display = 'list-item';
+                    navContact.style.display = 'list-item';
+
+
+                    if (userType === 'admin') {
+                        navCreateTender.style.display = 'list-item';
+                        navMyBids.style.display = 'none';
+                    } else if (userType === 'bidder') {
+                        navMyBids.style.display = 'list-item';
+                        navCreateTender.style.display = 'none';
+                    } else { // Handle unexpected userType
+                        navCreateTender.style.display = 'none';
+                        navMyBids.style.display = 'none';
+                    }
+                } else { // User is not logged in
+                    navLogin.style.display = 'list-item';
+                    navRegister.style.display = 'list-item';
+                    navHome.style.display = 'list-item';
+                    navContact.style.display = 'list-item';
+                    navDashboard.style.display = 'none';
+                    navCreateTender.style.display = 'none';
+                    navMyBids.style.display = 'none';
+                    navLogout.style.display = 'none';
+                    navProfile.style.display = 'none';
+                }
+            };
+
+            updateNavbar(); // Call on page load to set initial state
+
+            // Logout functionality
+            if (logoutLink) {
+                logoutLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('jwtToken');
+                    localStorage.removeItem('userType');
+                    alert('Logged out successfully!');
+                    window.location.href = 'home.html';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

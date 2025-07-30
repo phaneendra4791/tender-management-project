@@ -1,0 +1,436 @@
+/* Google Fonts - YouTube uses Roboto for most text */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+/* Optional: For a more prominent logo/title, you might add another font like Montserrat if desired */
+
+:root {
+    /* YouTube-like Color Palette */
+    --yt-red: #ff0000;
+    --yt-light-grey: #f9f9f9; /* Background, card backgrounds */
+    --yt-dark-grey: #606060; /* Subtle text, borders */
+    --yt-text-primary: #030303; /* Main text color */
+    --yt-text-secondary: #606060; /* Secondary text like descriptions */
+    --yt-border-light: #ccc;
+    --yt-hover-bg: #e5e5e5; /* Hover background for buttons/links */
+    --yt-blue-link: #337ab7; /* Standard link blue */
+}
+
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    margin: 0;
+    background-color: var(--yt-light-grey);
+    color: var(--yt-text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column; /* For proper footer placement if added later */
+}
+
+/* Header (Top Bar - YouTube-like) */
+header {
+    background-color: #fff;
+    border-bottom: 1px solid var(--yt-border-light);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08); /* Subtle shadow */
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--yt-text-primary);
+    text-decoration: none;
+}
+.logo-icon {
+    color: var(--yt-red);
+    margin-right: 5px;
+    font-size: 1.8rem;
+}
+
+/* Navbar (Right-aligned in Header) */
+.navbar ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+}
+
+.navbar ul li {
+    margin-left: 15px;
+}
+
+.navbar ul li a {
+    color: var(--yt-text-primary);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.navbar ul li a i { /* Icons within navbar links */
+    font-size: 1.1rem;
+}
+
+/* Navbar Hover/Active States */
+.navbar ul li a:hover,
+.navbar ul li a:focus {
+    background-color: var(--yt-hover-bg);
+    color: var(--yt-text-primary); /* Text color remains same for YouTube hover */
+    outline: none;
+}
+
+.navbar ul li.active a {
+    background-color: var(--yt-red); /* Active link might be red */
+    color: #fff;
+}
+
+/* Main Content Area Styling */
+main {
+    flex-grow: 1; /* Allow main content to grow and push footer down */
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px; /* Max width for content */
+    margin: 20px auto;
+}
+
+.section-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--yt-text-primary);
+    margin-bottom: 25px;
+    text-align: left; /* Align to left like YouTube sections */
+}
+
+/* Card/Content Item Styles (like YouTube video thumbnails) */
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsive grid */
+    gap: 20px;
+    padding: 0;
+}
+
+.project-card {
+    background-color: #fff;
+    border: 1px solid var(--yt-border-light);
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s, transform 0.2s;
+    text-decoration: none; /* Remove underline from card link */
+    color: var(--yt-text-primary);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.project-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+.project-card h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    line-height: 1.4;
+    color: var(--yt-text-primary);
+}
+.project-card p {
+    font-size: 0.85rem;
+    color: var(--yt-text-secondary);
+    margin-bottom: 5px;
+}
+.project-card small {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--yt-text-secondary);
+    margin-top: auto; /* Push to bottom */
+}
+.project-card .project-link { /* Button within card */
+    display: inline-block;
+    background-color: var(--yt-red);
+    color: #fff;
+    padding: 8px 15px;
+    border-radius: 4px;
+    text-align: center;
+    margin-top: 10px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+.project-card .project-link:hover {
+    background-color: #cc0000;
+}
+
+/* Form Styles (Login, Register, Create Tender, Contact) */
+.card { /* Overriding Bootstrap's card */
+    background-color: #fff;
+    border: 1px solid var(--yt-border-light);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    padding: 25px;
+    margin-bottom: 20px;
+}
+.form-label {
+    font-size: 0.9rem;
+    color: var(--yt-text-secondary);
+    margin-bottom: 5px;
+}
+.form-control, .form-select {
+    border: 1px solid var(--yt-border-light);
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 1rem;
+    width: 100%;
+    margin-bottom: 15px; /* Add margin bottom consistently */
+    box-shadow: none;
+    transition: border-color 0.2s;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--yt-blue-link);
+    box-shadow: 0 0 0 1px var(--yt-blue-link);
+    outline: none;
+}
+.btn-primary, .btn-success, .btn-outline-primary { /* General button styles */
+    font-size: 1rem;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    cursor: pointer;
+    border: none; /* Remove default Bootstrap border */
+}
+.btn-primary {
+    background-color: var(--yt-blue-link);
+    color: #fff;
+}
+.btn-primary:hover {
+    background-color: #2a6496; /* Darker blue */
+}
+.btn-success {
+    background-color: #4CAF50; /* Green for success */
+    color: #fff;
+}
+.btn-success:hover {
+    background-color: #45a049;
+}
+.btn-outline-primary {
+    background-color: transparent;
+    color: var(--yt-blue-link);
+    border: 1px solid var(--yt-blue-link);
+}
+.btn-outline-primary:hover {
+    background-color: var(--yt-blue-link);
+    color: #fff;
+}
+
+/* Specific Home Page Elements (Hero) */
+.hero-section {
+    background-color: #fff; /* White background for hero section */
+    padding: 40px 0;
+    border-bottom: 1px solid var(--yt-border-light);
+    text-align: center;
+}
+.hero-card {
+    background: none;
+    box-shadow: none;
+    display: block;
+    padding: 0;
+    border-radius: 0;
+}
+.hero-img { /* Removed completely */
+    display: none;
+}
+.hero-details {
+    align-items: center;
+}
+.hero-title {
+    font-size: 2.2rem;
+    color: var(--yt-text-primary);
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+.hero-role {
+    font-size: 1.2rem;
+    color: var(--yt-text-secondary);
+    font-weight: 400;
+    margin-bottom: 20px;
+}
+.hero-summary {
+    font-size: 1rem;
+    color: var(--yt-text-secondary);
+    max-width: 700px;
+    margin: 0 auto 20px auto;
+}
+.hero-buttons {
+    justify-content: center;
+    margin-bottom: 15px;
+}
+.hero-buttons .btn-contact { /* For "Join Now", "View Tenders" */
+    background-color: var(--yt-red);
+    color: #fff;
+    padding: 10px 20px;
+    font-weight: 500;
+}
+.hero-buttons .btn-contact:hover {
+    background-color: #cc0000;
+}
+.hero-buttons a[href="dashboard.html"].btn-contact { /* "View Tenders" specific style */
+    background-color: var(--yt-light-grey);
+    color: var(--yt-text-primary);
+    border: 1px solid var(--yt-border-light);
+}
+.hero-buttons a[href="dashboard.html"].btn-contact:hover {
+    background-color: var(--yt-hover-bg);
+}
+
+.hero-socials {
+    justify-content: center;
+    gap: 10px;
+    margin-top: 0;
+}
+.hero-socials i { /* Social icons */
+    font-size: 1.5rem;
+    color: var(--yt-text-secondary);
+    background: none;
+    border-radius: 0;
+    padding: 5px;
+}
+.hero-socials i:hover {
+    background: none; /* No background change for icons on hover */
+    color: var(--yt-red);
+    transform: none; /* No transform */
+    box-shadow: none; /* No shadow */
+}
+
+
+/* General Info Section (Adapted for "Why Choose Us?") */
+.skills-container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    padding: 25px;
+    margin: 20px auto;
+    max-width: 900px;
+}
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+}
+.skills-container .card { /* Specific styling for cards in this section */
+    box-shadow: none;
+    border: 1px solid var(--yt-border-light);
+    font-size: 0.9rem;
+    padding: 15px;
+    color: var(--yt-text-primary);
+    cursor: default; /* No hover effect for these cards */
+    transition: none;
+}
+.skills-container .card i {
+    font-size: 2rem;
+    color: var(--yt-blue-link); /* Blue icon */
+}
+.skills-container .card:hover {
+    background-color: #fff; /* Keep background white on hover */
+    color: var(--yt-text-primary); /* Keep text color primary */
+    transform: none; /* No transform */
+    box-shadow: none; /* No shadow */
+}
+.skills-container .card:hover i {
+    color: var(--yt-blue-link); /* Keep icon blue */
+}
+
+
+/* Contact Section */
+.contact-container { /* Revert to general card style */
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    padding: 25px;
+    margin: 20px auto;
+    max-width: 600px;
+}
+.contact-container .form {
+    align-items: stretch; /* Stretch form elements */
+}
+.contact-container .form-label {
+    text-align: left;
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+    header {
+        padding: 10px 15px;
+    }
+    .hero-card {
+        flex-direction: column;
+        padding: 20px;
+        gap: 20px;
+        width: 100%;
+    }
+    .hero-title {
+        font-size: 1.8rem;
+    }
+    .hero-role {
+        font-size: 1rem;
+    }
+    .hero-img img {
+        width: 150px;
+        height: 180px;
+    }
+    .navbar ul {
+        gap: 10px;
+    }
+    .navbar ul li {
+        margin-left: 8px;
+    }
+    .section-title {
+        font-size: 1.5rem;
+    }
+    .skills-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    .projects-grid {
+        grid-template-columns: 1fr;
+    }
+    .card, .project-card {
+        padding: 15px;
+        min-height: unset;
+    }
+}
+
+@media (max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: center;
+    }
+    .navbar ul {
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    .navbar ul li {
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+    .logo {
+        font-size: 1.3rem;
+    }
+    .hero-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
