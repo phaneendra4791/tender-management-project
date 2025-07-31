@@ -94,9 +94,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const jwtToken = localStorage.getItem('jwtToken');
-            const userType = localStorage.getItem('userType');
-
+            // Helper function to handle 401 Unauthorized errors
             const handleUnauthorized = (error) => {
                 if (error.message.includes('401') || error.message.includes('403')) {
                     Swal.fire({
@@ -107,6 +105,7 @@
                     }).then(() => {
                         localStorage.removeItem('jwtToken');
                         localStorage.removeItem('userType');
+                        localStorage.removeItem('username'); // Clear username as well
                         window.location.href = 'login.html';
                     });
                 } else {
@@ -118,6 +117,40 @@
                     });
                 }
             };
+
+            // Authenticated Fetch Utility (repeated in each HTML for simplicity, consider a shared JS file)
+            async function authenticatedFetch(url, options = {}) {
+                const token = localStorage.getItem('jwtToken');
+
+                if (!token) {
+                    handleUnauthorized(new Error('401 Unauthorized'));
+                    throw new Error('Authentication required.');
+                }
+
+                const headers = {
+                    ...options.headers,
+                    'x-auth-token': token // Add the authorization token
+                };
+
+                try {
+                    const response = await fetch(url, { ...options, headers });
+
+                    if (response.status === 401 || response.status === 403) {
+                        handleUnauthorized(new Error(`${response.status} Unauthorized/Forbidden`));
+                        throw new Error('Session expired or invalid token.');
+                    }
+
+                    return response;
+                } catch (error) {
+                    console.error('Error in authenticatedFetch:', error);
+                    handleUnauthorized(error); // Pass the actual error for better logging
+                    throw error;
+                }
+            }
+
+
+            const jwtToken = localStorage.getItem('jwtToken');
+            const userType = localStorage.getItem('userType');
 
             if (!jwtToken) {
                 Swal.fire({
@@ -145,6 +178,7 @@
                 }).then(() => {
                     localStorage.removeItem('jwtToken');
                     localStorage.removeItem('userType');
+                    localStorage.removeItem('username');
                     window.location.href = 'login.html';
                 });
                 return;
@@ -152,12 +186,7 @@
 
             async function fetchProfileData() {
                 try {
-                    const response = await fetch('http://127.0.0.1:5001/api/users/me', {
-                        headers: { 'x-auth-token': jwtToken }
-                    });
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error(`${response.status} Unauthorized/Forbidden`);
-                    }
+                    const response = await authenticatedFetch('http://127.0.0.1:5001/api/users/me'); // Protected route
                     const profile = await response.json();
 
                     if (!response.ok) {
@@ -182,22 +211,22 @@
                     if (profile.userDetails.userType === 'admin') {
                         document.getElementById('adminSections').style.display = 'block';
                         renderTenderList(profile.adminData?.createdTenders || [], 'createdTendersList');
-                        renderBidList(profile.adminData?.acceptedBids || [], 'acceptedBidsAdminList');
+                        renderBidList(profile.adminData?.bidsOnMyTenders || [], 'acceptedBidsAdminList', 'admin'); // Pass all bids, filter in renderBidList
                         const completedAdminTenders = (profile.adminData?.createdTenders || []).filter(tender => tender.status === 'Completed');
                         renderTenderList(completedAdminTenders, 'completedTendersAdminList');
                     }
                     else if (profile.userDetails.userType === 'bidder') {
                         document.getElementById('bidderSections').style.display = 'block';
-                        renderBidList(profile.bidderData?.allSubmittedBids || [], 'allSubmittedBidsList');
-                        renderBidList(profile.bidderData?.acceptedBids || [], 'acceptedBidsBidderList');
-                        renderBidList(profile.bidderData?.completedBids || [], 'completedBidsList');
+                        renderBidList(profile.bidderData?.allSubmittedBids || [], 'allSubmittedBidsList', 'bidder');
+                        renderBidList(profile.bidderData?.acceptedBids || [], 'acceptedBidsBidderList', 'bidder');
+                        renderBidList(profile.bidderData?.completedBids || [], 'completedBidsList', 'bidder');
                     }
 
                 } catch (error) {
                     console.error('Error fetching user profile:', error);
                     document.getElementById('profileHeading').textContent = 'Profile Load Error';
                     document.getElementById('profileUsername').textContent = `Error: ${error.message}`;
-                    handleUnauthorized(error);
+                    // handleUnauthorized is already called by authenticatedFetch
                 }
             }
 
@@ -209,7 +238,6 @@
                     return;
                 }
                 tenders.forEach(item => {
-                    // Corrected link to tender-details.html and adapted to project-card style
                     container.innerHTML += `
                         <a href="tender-details.html?id=${item._id}" class="project-card">
                             <h3>${item.title}</h3>
@@ -220,7 +248,7 @@
                 });
             }
 
-            function renderBidList(bids, containerId) {
+            function renderBidList(bids, containerId, displayType) {
                 const container = document.getElementById(containerId);
                 container.innerHTML = '';
                 if (!Array.isArray(bids) || bids.length === 0) {
@@ -228,18 +256,31 @@
                     return;
                 }
                 bids.forEach(bid => {
-                    if (bid.tender) { // Only render bid if bid.tender is not null (i.e., the tender still exists)
-                        // Corrected link to tender-details.html for the tender title, adapted to project-card style
+                    if (bid.tender) {
+                        let markCompletedButton = '';
+                        // Show "Mark as Completed" button for accepted bids by the current bidder
+                        if (displayType === 'bidder' && bid.status === 'Accepted' && bid.tender.status === 'Awarded') {
+                             markCompletedButton = `
+                                <button class="project-link mark-complete-btn" style="background-color: var(--yt-red); margin-top: 10px;" data-bid-id="${bid._id}">Mark as Completed</button>
+                            `;
+                        } else if (displayType === 'admin' && bid.status === 'Pending' && bid.tender.status === 'Open') {
+                             // This is for admin to accept bids, but we don't have this functionality on the profile page itself.
+                             // This is usually done on tender-details.html, so commenting it out for profile clarity.
+                             // markCompletedButton = `<button class="project-link accept-bid-btn" data-bid-id="${bid._id}" data-tender-id="${bid.tender._id}">Accept Bid</button>`;
+                        }
+
+
                         container.innerHTML += `
-                            <a href="tender-details.html?id=${bid.tender._id}" class="project-card">
-                                <h3>Tender: ${bid.tender.title}</h3>
-                                <p><strong>Bid Amount:</strong> $${bid.bidAmount.toLocaleString()}</p>
-                                <small>Status: ${bid.status} | Submitted On: ${new Date(bid.createdAt).toLocaleDateString()}</small>
-                                <small>Bidder: ${bid.bidder ? bid.bidder.username : 'N/A'}</small>
-                                ${bid.status === 'Accepted' && bid.tender.status === 'Awarded' && containerId === 'acceptedBidsBidderList' ? `
-                                    <button class="project-link" style="background-color: var(--yt-red); margin-top: 10px;" data-bid-id="${bid._id}">Mark as Completed</button>
-                                ` : ''}
-                            </a>
+                            <div class="project-card">
+                                <a href="tender-details.html?id=${bid.tender._id}" style="text-decoration: none; color: inherit;">
+                                    <h3>Tender: ${bid.tender.title}</h3>
+                                    <p><strong>Bid Amount:</strong> $${bid.bidAmount.toLocaleString()}</p>
+                                    <small>Status: ${bid.status} | Submitted On: ${new Date(bid.createdAt).toLocaleDateString()}</small>
+                                    <small>Tender Status: ${bid.tender.status}</small>
+                                    ${bid.bidder && displayType === 'admin' ? `<small>Bidder: ${bid.bidder.username || 'N/A'}</small>` : ''}
+                                </a>
+                                ${markCompletedButton}
+                            </div>
                         `;
                     } else {
                         console.log("Skipping bid in profile due to null tender:", bid);
@@ -251,23 +292,16 @@
                 });
             }
 
-            // Function to handle marking a bid as completed (copied from my-bids.html)
             async function handleMarkComplete(event) {
                 const bidId = event.target.dataset.bidId;
-                const token = localStorage.getItem('jwtToken');
 
                 try {
-                    const response = await fetch(`http://127.0.0.1:5001/api/bids/${bidId}/complete`, {
+                    const response = await authenticatedFetch(`http://127.0.0.1:5001/api/bids/${bidId}/complete`, { // Protected route
                         method: 'PUT',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'x-auth-token': token
+                            'Content-Type': 'application/json'
                         }
                     });
-
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error(`${response.status} Unauthorized/Forbidden`);
-                    }
 
                     const result = await response.json();
 
@@ -290,13 +324,13 @@
                     }
                 } catch (error) {
                     console.error('Error marking tender as completed:', error);
-                    handleUnauthorized(error);
+                    // handleUnauthorized is already called by authenticatedFetch
                 }
             }
 
             fetchProfileData();
 
-            // Dynamic Navbar Logic (copied from home.html and adapted)
+            // Dynamic Navbar Logic
             const navDashboard = document.getElementById('navDashboard');
             const navCreateTender = document.getElementById('navCreateTender');
             const navMyBids = document.getElementById('navMyBids');
@@ -305,16 +339,15 @@
             const navRegister = document.getElementById('navRegister');
             const navLogout = document.getElementById('navLogout');
             const logoutLink = document.getElementById('logoutLink');
-            
+
             const navHome = document.getElementById('navHome');
             const navContact = document.getElementById('navContact');
 
 
             const updateNavbar = () => {
-                const jwtTokenInScope = localStorage.getItem('jwtToken'); // Get current token
-                const userTypeInScope = localStorage.getItem('userType'); // Get current userType
+                const jwtTokenInScope = localStorage.getItem('jwtToken');
+                const userTypeInScope = localStorage.getItem('userType');
 
-                // Ensure elements exist before trying to access .style
                 if (navLogin) navLogin.style.display = 'list-item';
                 if (navRegister) navRegister.style.display = 'list-item';
                 if (navDashboard) navDashboard.style.display = 'list-item';
@@ -326,19 +359,19 @@
                 if (navMyBids) navMyBids.style.display = 'list-item';
 
 
-                if (jwtTokenInScope) { // User is logged in
+                if (jwtTokenInScope) {
                     if (navLogin) navLogin.style.display = 'none';
                     if (navRegister) navRegister.style.display = 'none';
-                    
+
                     if (userTypeInScope === 'admin') {
-                        if (navMyBids) navMyBids.style.display = 'none'; // Admins typically don't have 'My Bids'
+                        if (navMyBids) navMyBids.style.display = 'none';
                     } else if (userTypeInScope === 'bidder') {
-                        if (navCreateTender) navCreateTender.style.display = 'none'; // Bidders don't create tenders
-                    } else { // Handle unexpected userType
+                        if (navCreateTender) navCreateTender.style.display = 'none';
+                    } else {
                         if (navCreateTender) navCreateTender.style.display = 'none';
                         if (navMyBids) navMyBids.style.display = 'none';
                     }
-                } else { // User is not logged in (assuming current page should not be accessible if not logged in)
+                } else {
                     if (navDashboard) navDashboard.style.display = 'none';
                     if (navCreateTender) navCreateTender.style.display = 'none';
                     if (navMyBids) navMyBids.style.display = 'none';
@@ -354,6 +387,7 @@
                     e.preventDefault();
                     localStorage.removeItem('jwtToken');
                     localStorage.removeItem('userType');
+                    localStorage.removeItem('username');
                     Swal.fire({ title: 'Logged out!', text: 'You have been logged out.', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
                         window.location.href = 'home.html';
                     });

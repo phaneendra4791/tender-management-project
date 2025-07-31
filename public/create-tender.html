@@ -99,6 +99,7 @@
                     }).then(() => {
                         localStorage.removeItem('jwtToken');
                         localStorage.removeItem('userType');
+                        localStorage.removeItem('username'); // Clear username as well
                         window.location.href = 'login.html';
                     });
                 } else {
@@ -111,10 +112,44 @@
                 }
             };
 
+            // Authenticated Fetch Utility (repeated in each HTML for simplicity, consider a shared JS file)
+            async function authenticatedFetch(url, options = {}) {
+                const token = localStorage.getItem('jwtToken');
+
+                if (!token) {
+                    handleUnauthorized(new Error('401 Unauthorized'));
+                    throw new Error('Authentication required.');
+                }
+
+                const headers = {
+                    ...options.headers,
+                    'x-auth-token': token // Add the authorization token
+                };
+
+                try {
+                    const response = await fetch(url, { ...options, headers });
+
+                    if (response.status === 401 || response.status === 403) {
+                        handleUnauthorized(new Error(`${response.status} Unauthorized/Forbidden`));
+                        throw new Error('Session expired or invalid token.');
+                    }
+
+                    return response;
+                } catch (error) {
+                    console.error('Error in authenticatedFetch:', error);
+                    handleUnauthorized(error); // Pass the actual error for better logging
+                    throw error;
+                }
+            }
+
+
             const userTypeCheck = localStorage.getItem('userType');
             if (userTypeCheck !== 'admin') {
                 document.querySelector('form').innerHTML = '<p class="text-danger text-center">Access denied. Only administrators can create tenders.</p>';
                 document.querySelector('h2').textContent = 'Unauthorized';
+                // Optionally redirect immediately or hide the form
+                // window.location.href = 'dashboard.html';
+                return; // Stop execution if not admin
             }
 
             const createTenderForm = document.getElementById('createTenderForm');
@@ -148,21 +183,14 @@
                     documents
                 };
 
-                const token = localStorage.getItem('jwtToken');
-
                 try {
-                    const response = await fetch('http://127.0.0.1:5001/api/tenders', {
+                    const response = await authenticatedFetch('http://127.0.0.1:5001/api/tenders', { // Protected route
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'x-auth-token': token
+                            'Content-Type': 'application/json'
                         },
                         body: JSON.stringify(tenderData)
                     });
-
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error(`${response.status} Unauthorized/Forbidden`);
-                    }
 
                     const result = await response.json();
 
@@ -185,12 +213,12 @@
                         });
                     }
                 } catch (error) {
-                    console.error('Network or server error:', error);
-                    handleUnauthorized(error);
+                    console.error('Network or server error during tender creation:', error);
+                    // handleUnauthorized is already called by authenticatedFetch, so no need to call it again here
                 }
             }
 
-            // Dynamic Navbar Logic (copied from home.html)
+            // Dynamic Navbar Logic
             const jwtToken = localStorage.getItem('jwtToken');
             const userType = localStorage.getItem('userType');
 
@@ -202,7 +230,7 @@
             const navRegister = document.getElementById('navRegister');
             const navLogout = document.getElementById('navLogout');
             const logoutLink = document.getElementById('logoutLink');
-            
+
             const navHome = document.getElementById('navHome');
             const navContact = document.getElementById('navContact');
 
@@ -223,11 +251,11 @@
                     } else if (userType === 'bidder') {
                         if (navMyBids) navMyBids.style.display = 'list-item';
                         if (navCreateTender) navCreateTender.style.display = 'none';
-                    } else { // Handle unexpected userType
+                    } else {
                         if (navCreateTender) navCreateTender.style.display = 'none';
                         if (navMyBids) navMyBids.style.display = 'none';
                     }
-                } else { // User is not logged in
+                } else {
                     if (navLogin) navLogin.style.display = 'list-item';
                     if (navRegister) navRegister.style.display = 'list-item';
                     if (navHome) navHome.style.display = 'list-item';
@@ -247,6 +275,7 @@
                     e.preventDefault();
                     localStorage.removeItem('jwtToken');
                     localStorage.removeItem('userType');
+                    localStorage.removeItem('username'); // Clear username on logout
                     alert('Logged out successfully!');
                     window.location.href = 'home.html';
                 });

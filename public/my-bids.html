@@ -43,10 +43,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const jwtToken = localStorage.getItem('jwtToken');
-            const userType = localStorage.getItem('userType');
             const myBidsListDiv = document.getElementById('myBidsList');
 
+            // Helper function to handle 401 Unauthorized errors
             const handleUnauthorized = (error) => {
                 if (error.message.includes('401') || error.message.includes('403')) {
                     Swal.fire({
@@ -57,6 +56,7 @@
                     }).then(() => {
                         localStorage.removeItem('jwtToken');
                         localStorage.removeItem('userType');
+                        localStorage.removeItem('username'); // Clear username as well
                         window.location.href = 'login.html';
                     });
                 } else {
@@ -68,6 +68,40 @@
                     });
                 }
             };
+
+            // Authenticated Fetch Utility (repeated in each HTML for simplicity, consider a shared JS file)
+            async function authenticatedFetch(url, options = {}) {
+                const token = localStorage.getItem('jwtToken');
+
+                if (!token) {
+                    handleUnauthorized(new Error('401 Unauthorized'));
+                    throw new Error('Authentication required.');
+                }
+
+                const headers = {
+                    ...options.headers,
+                    'x-auth-token': token // Add the authorization token
+                };
+
+                try {
+                    const response = await fetch(url, { ...options, headers });
+
+                    if (response.status === 401 || response.status === 403) {
+                        handleUnauthorized(new Error(`${response.status} Unauthorized/Forbidden`));
+                        throw new Error('Session expired or invalid token.');
+                    }
+
+                    return response;
+                } catch (error) {
+                    console.error('Error in authenticatedFetch:', error);
+                    handleUnauthorized(error); // Pass the actual error for better logging
+                    throw error;
+                }
+            }
+
+
+            const jwtToken = localStorage.getItem('jwtToken');
+            const userType = localStorage.getItem('userType');
 
             if (!jwtToken || userType !== 'bidder') {
                 Swal.fire({
@@ -81,17 +115,11 @@
                 return;
             }
 
-            async function fetchMyBids(token) {
+            async function fetchMyBids() {
                 try {
-                    const response = await fetch('http://127.0.0.1:5001/api/bids/my-bids', {
-                        method: 'GET',
-                        headers: {
-                            'x-auth-token': token
-                        }
+                    const response = await authenticatedFetch('http://127.0.0.1:5001/api/bids/my-bids', { // Protected route
+                        method: 'GET'
                     });
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error(`${response.status} Unauthorized/Forbidden`);
-                    }
                     const bids = await response.json();
 
                     myBidsListDiv.innerHTML = '';
@@ -119,8 +147,8 @@
                                         </ul>
                                     ` : ''}
                                     <a href="tender-details.html?id=${bid.tender._id}" class="project-link">View Tender Details</a>
-                                    ${bid.status === 'Accepted' ? `
-                                        <button class="project-link" style="background-color: var(--yt-red); margin-top: 10px;" data-bid-id="${bid._id}">Mark as Completed</button>
+                                    ${bid.status === 'Accepted' && bid.tender.status === 'Awarded' ? `
+                                        <button class="project-link mark-complete-btn" style="background-color: var(--yt-red); margin-top: 10px;" data-bid-id="${bid._id}">Mark as Completed</button>
                                     ` : ''}
                                 </div>
                             `;
@@ -137,27 +165,20 @@
                 } catch (error) {
                     console.error('Error fetching my bids:', error);
                     myBidsListDiv.innerHTML = `<p class="text-center" style="color: var(--yt-text-secondary);">Error loading your bids: ${error.message}</p>`;
-                    handleUnauthorized(error);
+                    // handleUnauthorized is already called by authenticatedFetch
                 }
             }
 
-            // Function to handle marking a bid as completed
             async function handleMarkComplete(event) {
                 const bidId = event.target.dataset.bidId;
-                const token = localStorage.getItem('jwtToken');
 
                 try {
-                    const response = await fetch(`http://127.0.0.1:5001/api/bids/${bidId}/complete`, {
+                    const response = await authenticatedFetch(`http://127.0.0.1:5001/api/bids/${bidId}/complete`, { // Protected route
                         method: 'PUT',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'x-auth-token': token
+                            'Content-Type': 'application/json'
                         }
                     });
-
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error(`${response.status} Unauthorized/Forbidden`);
-                    }
 
                     const result = await response.json();
 
@@ -168,7 +189,7 @@
                             icon: 'success',
                             confirmButtonText: 'OK'
                         }).then(() => {
-                            fetchMyBids(token); // Refresh the 'My Bids' list
+                            fetchMyBids(); // Refresh the 'My Bids' list
                         });
                     } else {
                         Swal.fire({
@@ -180,16 +201,13 @@
                     }
                 } catch (error) {
                     console.error('Error marking tender as completed:', error);
-                    handleUnauthorized(error);
+                    // handleUnauthorized is already called by authenticatedFetch
                 }
             }
 
-            fetchMyBids(jwtToken);
+            fetchMyBids();
 
-            // Dynamic Navbar Logic (copied from home.html and adapted)
-            const jwtTokenInScope = localStorage.getItem('jwtToken'); // Renamed to avoid conflict
-            const userTypeInScope = localStorage.getItem('userType'); // Renamed to avoid conflict
-
+            // Dynamic Navbar Logic
             const navDashboard = document.getElementById('navDashboard');
             const navCreateTender = document.getElementById('navCreateTender');
             const navMyBids = document.getElementById('navMyBids');
@@ -203,7 +221,10 @@
 
 
             const updateNavbar = () => {
-                if (jwtTokenInScope) { // User is logged in
+                const jwtTokenInScope = localStorage.getItem('jwtToken');
+                const userTypeInScope = localStorage.getItem('userType');
+
+                if (jwtTokenInScope) {
                     navLogin.style.display = 'none';
                     navRegister.style.display = 'none';
                     if (navDashboard) navDashboard.style.display = 'list-item';
@@ -218,11 +239,11 @@
                     } else if (userTypeInScope === 'bidder') {
                         if (navMyBids) navMyBids.style.display = 'list-item';
                         if (navCreateTender) navCreateTender.style.display = 'none';
-                    } else { // Handle unexpected userType
+                    } else {
                         if (navCreateTender) navCreateTender.style.display = 'none';
                         if (navMyBids) navMyBids.style.display = 'none';
                     }
-                } else { // User is not logged in
+                } else {
                     if (navLogin) navLogin.style.display = 'list-item';
                     if (navRegister) navRegister.style.display = 'list-item';
                     if (navHome) navHome.style.display = 'list-item';
@@ -235,13 +256,14 @@
                 }
             };
 
-            updateNavbar(); // Call on page load to set initial state
+            updateNavbar();
 
             if (logoutLink) {
                 logoutLink.addEventListener('click', (e) => {
                     e.preventDefault();
                     localStorage.removeItem('jwtToken');
                     localStorage.removeItem('userType');
+                    localStorage.removeItem('username'); // Clear username on logout
                     Swal.fire({ title: 'Logged out!', text: 'You have been logged out.', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
                         window.location.href = 'home.html';
                     });

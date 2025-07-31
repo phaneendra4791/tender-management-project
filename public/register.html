@@ -61,7 +61,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Validation function (can be global or local depending on your preference)
         function validateForm() {
             var name = document.getElementById("username").value.trim();
             var email = document.getElementById("email").value.trim();
@@ -106,7 +105,7 @@
                 });
                 return false;
             }
-            if (company.length < 2) {
+            if (document.getElementById("userType").value === 'bidder' && company.length < 2) { // Only require for bidder
                 Swal.fire({
                     title: 'Company Required',
                     text: 'Please enter a valid company name',
@@ -115,7 +114,7 @@
                 });
                 return false;
             }
-            if (!/^\d{10}$/.test(contact)) {
+            if (document.getElementById("userType").value === 'bidder' && !/^\d{10}$/.test(contact)) { // Only require for bidder
                 Swal.fire({
                     title: 'Invalid Contact',
                     text: 'Contact should be 10 digits',
@@ -127,13 +126,10 @@
             return true;
         }
 
-        // handleRegistration function (moved outside the DOMContentLoaded listener for direct accessibility, though attaching with addEventListener is preferred)
         async function handleRegistration(event) {
-            event.preventDefault(); // This is crucial to prevent default form submission
+            event.preventDefault();
 
-            console.log("handleRegistration function called.");
             if (!validateForm()) {
-                console.log("Validation failed.");
                 return;
             }
 
@@ -150,9 +146,6 @@
                 data.contact = contact;
             }
 
-            console.log("Attempting to send data:", data);
-            console.log("Sending fetch request to http://127.0.0.1:5001/api/auth/register with method POST");
-
             try {
                 const response = await fetch('http://127.0.0.1:5001/api/auth/register', {
                     method: 'POST',
@@ -162,20 +155,20 @@
                     body: JSON.stringify(data)
                 });
 
-                console.log("Fetch response received, status:", response.status);
-                console.log("Response OK status:", response.ok);
-
                 const result = await response.json();
-                console.log("Parsed response from server:", result);
 
                 if (response.ok) {
                     Swal.fire({
                         title: 'Success!',
-                        text: 'Registration successful! Please login.',
+                        text: 'Registration successful! You can now log in.',
                         icon: 'success',
                         confirmButtonText: 'OK'
                     }).then(() => {
-                        window.location.href = 'login.html?success=registered';
+                        // Store token and userType after successful registration for immediate login (optional, but good UX)
+                        localStorage.setItem('jwtToken', result.token); // Store the JWT
+                        localStorage.setItem('userType', result.user.userType); // Store user type
+                        localStorage.setItem('username', result.user.username); // Store username
+                        window.location.href = 'dashboard.html'; // Redirect to dashboard or login
                     });
                 } else {
                     let errorMessage = result.msg || 'Registration failed.';
@@ -201,13 +194,33 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Attach the event listener here
             const registrationForm = document.getElementById('registrationForm');
             if (registrationForm) {
                 registrationForm.addEventListener('submit', handleRegistration);
             }
 
-            // This part handles URL parameters (like success=registered)
+            // Adjust visibility of company/contact fields based on user type
+            const userTypeSelect = document.getElementById('userType');
+            const companyDiv = document.getElementById('company').closest('.mb-3');
+            const contactDiv = document.getElementById('contact').closest('.mb-3');
+
+            const toggleCompanyContactFields = () => {
+                if (userTypeSelect.value === 'bidder') {
+                    companyDiv.style.display = 'block';
+                    contactDiv.style.display = 'block';
+                    document.getElementById('company').required = true;
+                    document.getElementById('contact').required = true;
+                } else {
+                    companyDiv.style.display = 'none';
+                    contactDiv.style.display = 'none';
+                    document.getElementById('company').required = false;
+                    document.getElementById('contact').required = false;
+                }
+            };
+
+            userTypeSelect.addEventListener('change', toggleCompanyContactFields);
+            toggleCompanyContactFields(); // Call on load to set initial state
+
             const urlParams = new URLSearchParams(window.location.search);
             const error = urlParams.get('error');
 
@@ -220,7 +233,7 @@
                         text = 'This email is already registered!';
                         break;
                     case 'name_invalid':
-                        text = 'Invalid name format!';
+                        text = 'Name should contain only letters and spaces';
                         break;
                     case 'email_invalid':
                         text = 'Invalid email format!';
@@ -249,7 +262,7 @@
                     confirmButtonText: 'Try Again'
                 });
             }
-        }); // End of main DOMContentLoaded listener
+        });
     </script>
 </body>
 </html>

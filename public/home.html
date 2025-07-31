@@ -64,7 +64,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Get navigation items by ID
             const navDashboard = document.getElementById('navDashboard');
             const navCreateTender = document.getElementById('navCreateTender');
             const navMyBids = document.getElementById('navMyBids');
@@ -76,13 +75,11 @@
             const navHome = document.getElementById('navHome');
             const navContact = document.getElementById('navContact');
 
-
-            // Function to update navbar visibility
             const updateNavbar = () => {
                 const jwtToken = localStorage.getItem('jwtToken');
                 const userType = localStorage.getItem('userType');
 
-                if (jwtToken) { // User is logged in
+                if (jwtToken) {
                     navLogin.style.display = 'none';
                     navRegister.style.display = 'none';
                     navDashboard.style.display = 'list-item';
@@ -91,18 +88,17 @@
                     navHome.style.display = 'list-item';
                     navContact.style.display = 'list-item';
 
-
                     if (userType === 'admin') {
                         navCreateTender.style.display = 'list-item';
                         navMyBids.style.display = 'none';
                     } else if (userType === 'bidder') {
                         navMyBids.style.display = 'list-item';
                         navCreateTender.style.display = 'none';
-                    } else { // Handle unexpected userType
+                    } else {
                         navCreateTender.style.display = 'none';
                         navMyBids.style.display = 'none';
                     }
-                } else { // User is not logged in
+                } else {
                     navLogin.style.display = 'list-item';
                     navRegister.style.display = 'list-item';
                     navHome.style.display = 'list-item';
@@ -115,9 +111,8 @@
                 }
             };
 
-            updateNavbar(); // Call on page load to set initial state
+            updateNavbar();
 
-            // Logout functionality
             if (logoutLink) {
                 logoutLink.addEventListener('click', (e) => {
                     e.preventDefault();

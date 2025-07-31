@@ -8,7 +8,8 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
-    <script src="https://kit.fontawesome.com/de4ee47533.js" crossorigin="anonymous"></script> </head>
+    <script src="https://kit.fontawesome.com/de4ee47533.js" crossorigin="anonymous"></script>
+</head>
 <body>
 
     <header>
@@ -53,6 +54,7 @@
                     }).then(() => {
                         localStorage.removeItem('jwtToken');
                         localStorage.removeItem('userType');
+                        localStorage.removeItem('username'); // Clear username as well
                         window.location.href = 'login.html';
                     });
                 } else {
@@ -65,10 +67,43 @@
                 }
             };
 
+            // Authenticated Fetch Utility (repeated in each HTML for simplicity, consider a shared JS file)
+            async function authenticatedFetch(url, options = {}) {
+                const token = localStorage.getItem('jwtToken'); // Using 'jwtToken' as per your code
+
+                if (!token) {
+                    handleUnauthorized(new Error('401 Unauthorized'));
+                    throw new Error('Authentication required.');
+                }
+
+                const headers = {
+                    ...options.headers,
+                    'x-auth-token': token // Add the authorization token
+                };
+
+                try {
+                    const response = await fetch(url, { ...options, headers });
+
+                    if (response.status === 401 || response.status === 403) {
+                        handleUnauthorized(new Error(`${response.status} Unauthorized/Forbidden`));
+                        throw new Error('Session expired or invalid token.');
+                    }
+
+                    return response;
+                } catch (error) {
+                    console.error('Error in authenticatedFetch:', error);
+                    handleUnauthorized(error); // Pass the actual error for better logging
+                    throw error;
+                }
+            }
+
+
             // Function to fetch and display tenders
             async function fetchTenders() {
                 try {
+                    // This route is public, so no need for authenticatedFetch unless you want unified error handling
                     const response = await fetch('http://127.0.0.1:5001/api/tenders');
+                    // Check for 401/403 even for public routes if the response could potentially return it (unlikely here)
                     if (response.status === 401 || response.status === 403) {
                         throw new Error(`${response.status} Unauthorized/Forbidden`);
                     }
@@ -106,13 +141,14 @@
                 } catch (error) {
                     console.error('Error fetching tenders:', error);
                     document.getElementById('tendersList').innerHTML = `<p class="text-center" style="color: var(--yt-text-secondary);">Failed to load tenders: ${error.message}</p>`;
-                    handleUnauthorized(error);
+                    // No direct handleUnauthorized here as this route is public, but error logging is still useful.
+                    // If you want unified error messaging for all fetches, even public ones, then call handleUnauthorized.
                 }
             }
 
             fetchTenders();
 
-            // Dynamic Navbar Logic (copied from home.html and adapted)
+            // Dynamic Navbar Logic
             const jwtToken = localStorage.getItem('jwtToken');
             const userType = localStorage.getItem('userType');
 
@@ -129,14 +165,14 @@
 
 
             const updateNavbar = () => {
-                if (jwtToken) { // User is logged in
+                if (jwtToken) {
                     navLogin.style.display = 'none';
                     navRegister.style.display = 'none';
                     if (navDashboard) navDashboard.style.display = 'list-item';
                     if (navLogout) navLogout.style.display = 'list-item';
                     if (navProfile) navProfile.style.display = 'list-item';
                     if (navHome) navHome.style.display = 'list-item';
-                    if (navContact) navContact.style.display = 'list-item'; // Contact Us is available when logged in
+                    if (navContact) navContact.style.display = 'list-item';
 
 
                     if (userType === 'admin') {
@@ -145,15 +181,15 @@
                     } else if (userType === 'bidder') {
                         if (navMyBids) navMyBids.style.display = 'list-item';
                         if (navCreateTender) navCreateTender.style.display = 'none';
-                    } else { // Handle unexpected userType
+                    } else {
                         if (navCreateTender) navCreateTender.style.display = 'none';
                         if (navMyBids) navMyBids.style.display = 'none';
                     }
-                } else { // User is not logged in
+                } else {
                     navLogin.style.display = 'list-item';
                     navRegister.style.display = 'list-item';
                     if (navHome) navHome.style.display = 'list-item';
-                    if (navContact) navContact.style.display = 'list-item'; // Contact Us is available when not logged in
+                    if (navContact) navContact.style.display = 'list-item';
                     if (navDashboard) navDashboard.style.display = 'none';
                     if (navCreateTender) navCreateTender.style.display = 'none';
                     if (navMyBids) navMyBids.style.display = 'none';
@@ -162,14 +198,14 @@
                 }
             };
 
-            updateNavbar(); // Call on page load to set initial state
+            updateNavbar();
 
-            // Logout functionality
             if (logoutLink) {
                 logoutLink.addEventListener('click', (e) => {
                     e.preventDefault();
                     localStorage.removeItem('jwtToken');
                     localStorage.removeItem('userType');
+                    localStorage.removeItem('username'); // Clear username on logout
                     Swal.fire({ title: 'Logged out!', text: 'You have been logged out.', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
                         window.location.href = 'home.html';
                     });
