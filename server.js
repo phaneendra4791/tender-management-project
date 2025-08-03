@@ -14,11 +14,15 @@ app.use(express.json());
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
 
-// Connect to MongoDB
+// Connect to MongoDB Atlas
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('MongoDB connected'))
+  useUnifiedTopology: true,
+  ssl: true,
+  tlsAllowInvalidCertificates: false,
+  retryWrites: true,
+  w: 'majority'
+}).then(() => console.log('MongoDB Atlas connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Define a basic root route for API status check
