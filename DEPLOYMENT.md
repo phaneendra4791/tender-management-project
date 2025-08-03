@@ -63,7 +63,7 @@ In Railway dashboard:
 ### Step 4: Deploy
 Railway will automatically deploy when you push to your repository.
 
-## Option 3: Render Deployment
+## Option 3: Render Deployment (Recommended)
 
 ### Step 1: Visit Render
 1. Go to [render.com](https://render.com)
@@ -72,20 +72,27 @@ Railway will automatically deploy when you push to your repository.
 
 ### Step 2: Connect Repository
 1. Connect your GitHub repository
-2. Render will auto-detect the configuration
+2. Render will auto-detect the configuration from `render.yaml`
 
 ### Step 3: Configure Service
+The `render.yaml` file is already configured with:
 - **Name**: tender-management
 - **Environment**: Node
 - **Build Command**: `npm install`
 - **Start Command**: `npm start`
 
 ### Step 4: Set Environment Variables
+In the Render dashboard, add these environment variables:
 - `MONGODB_URI`: Your MongoDB Atlas connection string
-- `JWT_SECRET`: Your JWT secret key
+- `JWT_SECRET`: Your JWT secret key (use a strong, random string)
+- `NODE_ENV`: production (already set in render.yaml)
+- `PORT`: 10000 (already set in render.yaml)
 
 ### Step 5: Deploy
-Click "Create Web Service" - Render will deploy automatically.
+Click "Create Web Service" - Render will deploy automatically using the `render.yaml` configuration.
+
+### Step 6: Access Your App
+Once deployed, Render will provide you with a URL like: `https://your-app-name.onrender.com`
 
 ## Option 4: Vercel Deployment
 
